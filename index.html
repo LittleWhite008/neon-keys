@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Keys | 赛博朋克打字钢琴</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --neon-cyan: #00f5ff;
+            --neon-pink: #ff00ff;
+            --neon-purple: #bf00ff;
+            --neon-yellow: #ffff00;
+            --neon-green: #00ff9f;
+            --neon-orange: #ff9500;
+            --dark-bg: #0a0a1a;
+            --grid-color: rgba(0, 245, 255, 0.1);
+            --piano-key-width: 80px;
+            --piano-key-gap: 6px;
+            --piano-total-width: calc(var(--piano-key-width) * 7 + var(--piano-key-gap) * 6);
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: var(--dark-bg);
+            min-height: 100vh;
+            overflow: hidden;
+            color: #fff;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* 版本号 */
+        .version-badge {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            padding: 5px 12px;
+            background: rgba(191, 0, 255, 0.2);
+            border: 1px solid var(--neon-purple);
+            border-radius: 20px;
+            color: var(--neon-purple);
+            z-index: 200;
+            letter-spacing: 1px;
+        }
+
+        /* 赛博朋克网格背景 */
+        .cyber-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px),
+                linear-gradient(var(--grid-color) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes gridMove {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(50px); }
+        }
+
+        /* 扫描线效果 */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.1) 0px,
+                rgba(0, 0, 0, 0.1) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* 霓虹发光文字 */
+        .neon-text {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        .neon-pink {
+            color: var(--neon-pink);
+            text-shadow: 
+                0 0 5px var(--neon-pink),
+                0 0 10px var(--neon-pink),
+                0 0 20px var(--neon-pink),
+                0 0 40px var(--neon-pink);
+        }
+
+        .neon-cyan {
+            color: var(--neon-cyan);
+            text-shadow: 
+                0 0 5px var(--neon-cyan),
+                0 0 10px var(--neon-cyan),
+                0 0 20px var(--neon-cyan);
+        }
+
+        .neon-purple {
+            color: var(--neon-purple);
+            text-shadow: 
+                0 0 5px var(--neon-purple),
+                0 0 15px var(--neon-purple),
+                0 0 30px var(--neon-purple);
+        }
+
+        /* 游戏容器 */
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            z-index: 10;
+        }
+
+        /* 开始界面 */
+        #start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        #start-screen h1 {
+            font-size: clamp(2rem, 6vw, 4rem);
+            margin-bottom: 10px;
+            animation: glitch 2s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 90%, 100% { transform: translate(0); }
+            92% { transform: translate(-5px, 2px); filter: hue-rotate(90deg); }
+            94% { transform: translate(5px, -2px); filter: hue-rotate(-90deg); }
+            96% { transform: translate(-3px, 0); }
+        }
+
+        #start-screen .subtitle {
+            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            color: #888;
+            margin-bottom: 30px;
+            letter-spacing: 8px;
+        }
+
+        /* 曲目选择器 */
+        .song-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .song-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+            letter-spacing: 1px;
+        }
+
+        .song-btn:hover {
+            background: rgba(0, 245, 255, 0.1);
+        }
+
+        .song-btn.active {
+            background: var(--neon-cyan);
+            color: var(--dark-bg);
+            box-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        .menu-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+            padding: 12px 40px;
+            margin: 8px;
+            background: transparent;
+            border: 2px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .menu-btn:hover {
+            background: var(--neon-cyan);
+            color: var(--dark-bg);
+            box-shadow: 
+                0 0 20px var(--neon-cyan),
+                inset 0 0 20px rgba(0, 245, 255, 0.3);
+        }
+
+        .menu-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.5s;
+        }
+
+        .menu-btn:hover::before {
+            left: 100%;
+        }
+
+        /* 游戏界面 */
+        #game-screen {
+            display: none;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 顶部信息栏 */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+            position: relative;
+            z-index: 20;
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(191, 0, 255, 0.2);
+            border: 1px solid var(--neon-purple);
+            border-radius: 8px;
+            color: var(--neon-cyan);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: var(--neon-purple);
+            color: #fff;
+            box-shadow: 0 0 15px var(--neon-purple);
+            transform: scale(1.05);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .score-display {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+        }
+
+        .combo-display {
+            font-size: clamp(1.2rem, 2.5vw, 2rem);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .combo-display.active {
+            opacity: 1;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* 曲目名称 */
+        .song-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+            padding: 5px 15px;
+            background: rgba(191, 0, 255, 0.2);
+            border: 1px solid var(--neon-purple);
+            border-radius: 20px;
+        }
+
+        /* 钢琴键区域 - 固定在底部 */
+        .piano-keys-wrapper {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+        }
+
+        .piano-keys {
+            display: flex;
+            gap: var(--piano-key-gap);
+        }
+
+        .piano-key {
+            width: var(--piano-key-width);
+            height: 160px;
+            background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%);
+            border: 2px solid var(--neon-purple);
+            border-radius: 0 0 8px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 12px;
+            position: relative;
+            box-shadow: 0 0 10px rgba(191, 0, 255, 0.3);
+            transition: border-color 0.1s, box-shadow 0.1s, transform 0.05s;
+        }
+
+        .piano-key .key-letter {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.8rem, 3vw, 2.2rem);
+            font-weight: 900;
+            color: var(--neon-cyan);
+            text-shadow: 
+                0 0 10px var(--neon-cyan),
+                0 0 20px var(--neon-cyan),
+                0 2px 4px rgba(0,0,0,0.5);
+            z-index: 2;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .piano-key .key-note {
+            font-size: clamp(0.6rem, 1vw, 0.8rem);
+            color: rgba(255,255,255,0.5);
+            margin-top: 4px;
+        }
+
+        /* 长按状态 */
+        .piano-key.pressed {
+            transform: translateY(3px);
+        }
+
+        .piano-key.hit {
+            border-color: var(--neon-green);
+            box-shadow: 
+                0 0 30px var(--neon-green),
+                inset 0 0 30px rgba(0, 255, 159, 0.3);
+        }
+
+        .piano-key.hit .key-letter {
+            color: var(--neon-green);
+            text-shadow: 
+                0 0 15px var(--neon-green),
+                0 0 30px var(--neon-green);
+        }
+
+        .piano-key.holding {
+            border-color: var(--neon-orange);
+            box-shadow: 
+                0 0 30px var(--neon-orange),
+                inset 0 0 30px rgba(255, 149, 0, 0.3);
+        }
+
+        .piano-key.holding .key-letter {
+            color: var(--neon-orange);
+            text-shadow: 
+                0 0 15px var(--neon-orange),
+                0 0 30px var(--neon-orange);
+        }
+
+        /* 命中目标线 */
+        .hit-line {
+            position: absolute;
+            bottom: 190px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: var(--piano-total-width);
+            height: 4px;
+            background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan), var(--neon-pink));
+            border-radius: 2px;
+            box-shadow: 0 0 20px var(--neon-pink);
+            z-index: 15;
+            opacity: 0.6;
+        }
+
+        /* 音符下落区域 */
+        .notes-area {
+            position: absolute;
+            top: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: var(--piano-total-width);
+            height: calc(100vh - 350px);
+            z-index: 10;
+            overflow: visible;
+        }
+
+        /* 音符下落轨迹线 */
+        .note-trails {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.15;
+        }
+
+        .trail-line {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(180deg, transparent 0%, var(--neon-purple) 100%);
+        }
+
+        /* 单个音符 - 优化版 */
+        .note {
+            position: absolute;
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.5rem, 2.5vw, 2rem);
+            font-weight: 900;
+            padding: 12px 0;
+            width: var(--piano-key-width);
+            text-align: center;
+            border-radius: 12px;
+            color: #fff;
+            transform: translateX(-50%);
+            transition: all 0.05s ease-out;
+            animation: noteGlow 0.5s ease-in-out infinite alternate;
+        }
+
+        .note .note-letter {
+            text-shadow: 
+                0 0 10px currentColor,
+                0 0 20px currentColor,
+                0 2px 4px rgba(0,0,0,0.8);
+            letter-spacing: 2px;
+        }
+
+        /* 普通音符 */
+        .note.short {
+            background: linear-gradient(180deg, rgba(191, 0, 255, 0.7) 0%, rgba(191, 0, 255, 0.4) 100%);
+            border: 3px solid var(--neon-pink);
+            box-shadow: 
+                0 0 25px rgba(255, 0, 255, 0.7),
+                0 4px 15px rgba(0, 0, 0, 0.5),
+                inset 0 0 20px rgba(255, 0, 255, 0.3);
+        }
+
+        /* 长按音符 */
+        .note.long {
+            background: linear-gradient(180deg, rgba(255, 149, 0, 0.7) 0%, rgba(255, 149, 0, 0.4) 100%);
+            border: 3px solid var(--neon-orange);
+            box-shadow: 
+                0 0 25px rgba(255, 149, 0, 0.7),
+                0 4px 15px rgba(0, 0, 0, 0.5),
+                inset 0 0 20px rgba(255, 149, 0, 0.3);
+            min-height: 60px;
+        }
+
+        .note.long .note-duration {
+            font-size: 0.7rem;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+
+        @keyframes noteGlow {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.15); }
+        }
+
+        .note.hit {
+            transform: translateX(-50%) scale(1.2);
+            border-color: var(--neon-green) !important;
+            background: rgba(0, 255, 159, 0.6) !important;
+            box-shadow: 0 0 50px var(--neon-green) !important;
+        }
+
+        .note.missed {
+            opacity: 0.3;
+            border-color: #ff4444 !important;
+            background: rgba(255, 68, 68, 0.3) !important;
+        }
+
+        .note.holding {
+            border-color: var(--neon-orange) !important;
+            animation: holdPulse 0.3s ease-in-out infinite;
+        }
+
+        @keyframes holdPulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(255, 149, 0, 0.7); }
+            50% { box-shadow: 0 0 50px rgba(255, 149, 0, 1); }
+        }
+
+        /* 五线谱装饰 */
+        .staff-lines {
+            position: absolute;
+            top: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(var(--piano-total-width) + 100px);
+            height: 150px;
+            opacity: 0.15;
+            pointer-events: none;
+        }
+
+        .staff-line {
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background: var(--neon-cyan);
+        }
+
+        /* 击中特效 */
+        .hit-effect {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: ripple 0.5s forwards;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 1;
+                border: 3px solid var(--neon-green);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+                border: 3px solid var(--neon-green);
+            }
+        }
+
+        /* 连击火焰 */
+        .fire-text {
+            position: absolute;
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            font-weight: 900;
+            pointer-events: none;
+            animation: fireRise 1s forwards;
+            transform: translateX(-50%);
+        }
+
+        @keyframes fireRise {
+            0% {
+                transform: translateX(-50%) translateY(0) scale(0.5);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(-50%) translateY(-80px) scale(1.3);
+                opacity: 0;
+            }
+        }
+
+        /* 长按提示 */
+        .hold-hint {
+            position: absolute;
+            bottom: 250px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: var(--neon-orange);
+            text-shadow: 0 0 10px var(--neon-orange);
+            animation: fadeInOut 2s infinite;
+            z-index: 20;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        /* 结果界面 */
+        #result-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .result-title {
+            font-size: clamp(1.5rem, 4vw, 3rem);
+            margin-bottom: 20px;
+        }
+
+        .grade-display {
+            font-size: clamp(4rem, 12vw, 8rem);
+            font-family: 'Orbitron', sans-serif;
+            margin: 15px 0;
+            animation: gradeGlow 1s infinite alternate;
+        }
+
+        @keyframes gradeGlow {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.5); }
+        }
+
+        .grade-s { color: #ffd700; text-shadow: 0 0 30px #ffd700, 0 0 60px #ffd700; }
+        .grade-a { color: var(--neon-green); text-shadow: 0 0 30px var(--neon-green); }
+        .grade-b { color: var(--neon-cyan); text-shadow: 0 0 30px var(--neon-cyan); }
+        .grade-c { color: var(--neon-purple); text-shadow: 0 0 30px var(--neon-purple); }
+        .grade-d { color: #ff4444; text-shadow: 0 0 30px #ff4444; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--neon-purple);
+            border-radius: 10px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: clamp(1.3rem, 3vw, 2rem);
+            color: var(--neon-cyan);
+        }
+
+        /* 排行榜 */
+        #leaderboard {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .leaderboard-title {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            margin-bottom: 10px;
+            color: var(--neon-pink);
+        }
+
+        .leaderboard-list {
+            list-style: none;
+            text-align: left;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            margin: 4px 0;
+            background: rgba(191, 0, 255, 0.1);
+            border-left: 3px solid var(--neon-purple);
+        }
+
+        .leaderboard-item.top-1 { border-left-color: #ffd700; background: rgba(255, 215, 0, 0.1); }
+        .leaderboard-item.top-2 { border-left-color: #c0c0c0; background: rgba(192, 192, 192, 0.1); }
+        .leaderboard-item.top-3 { border-left-color: #cd7f32; background: rgba(205, 127, 50, 0.1); }
+
+        /* 暂停界面 */
+        .pause-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            flex-direction: column;
+            backdrop-filter: blur(5px);
+        }
+
+        .pause-content {
+            text-align: center;
+        }
+
+        .pause-text {
+            font-size: clamp(2rem, 6vw, 4rem);
+            animation: blink 1s infinite;
+            margin-bottom: 30px;
+        }
+
+        .pause-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .pause-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            padding: 12px 30px;
+            background: transparent;
+            border: 2px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s;
+            min-width: 200px;
+        }
+
+        .pause-btn:hover {
+            background: var(--neon-cyan);
+            color: var(--dark-bg);
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        .pause-btn.danger {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+        }
+
+        .pause-btn.danger:hover {
+            background: var(--neon-pink);
+            color: #fff;
+            box-shadow: 0 0 20px var(--neon-pink);
+        }
+
+        .pause-hint {
+            margin-top: 30px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        /* 进度条 */
+        .progress-bar {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(80%, 600px);
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            z-index: 20;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-purple), var(--neon-pink));
+            width: 0%;
+            transition: width 0.1s;
+        }
+
+        /* 教程提示 */
+        .tutorial-tip {
+            position: absolute;
+            bottom: 220px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+            color: rgba(255,255,255,0.6);
+            text-align: center;
+            animation: fadeInOut 3s infinite;
+            z-index: 20;
+            white-space: nowrap;
+        }
+
+        .key-hint {
+            display: inline-block;
+            padding: 4px 12px;
+            border: 1px solid var(--neon-cyan);
+            border-radius: 5px;
+            margin: 0 5px;
+            color: var(--neon-cyan);
+        }
+
+        /* 响应式调整 */
+        @media (max-height: 600px) {
+            .piano-key { height: 120px; }
+            .hit-line { bottom: 150px; }
+            .notes-area { height: calc(100vh - 280px); }
+        }
+
+        @media (max-width: 600px) {
+            :root {
+                --piano-key-width: 45px;
+                --piano-key-gap: 3px;
+            }
+            .piano-key { height: 130px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="version-badge" id="version-badge">v2.1.0</div>
+    <div class="cyber-grid"></div>
+    <div class="scanlines"></div>
+
+    <div id="game-container">
+        <!-- 开始界面 -->
+        <div id="start-screen">
+            <h1 class="neon-text neon-pink">NEON KEYS</h1>
+            <p class="subtitle">赛博朋克打字钢琴</p>
+            
+            <div class="song-selector">
+                <button class="song-btn active" data-song="canon">🎹 卡农</button>
+                <button class="song-btn" data-song="skycity">🎵 天空之城</button>
+                <button class="song-btn" data-song="river">🌊 River Flows</button>
+            </div>
+            
+            <button class="menu-btn" id="btn-practice">练习模式</button>
+            <button class="menu-btn" id="btn-play">演奏模式</button>
+            <button class="menu-btn" id="btn-challenge">挑战模式</button>
+            <button class="menu-btn" id="btn-leaderboard">排行榜</button>
+        </div>
+
+        <!-- 游戏界面 -->
+        <div id="game-screen">
+            <div class="game-header">
+                <div class="score-display neon-text neon-cyan">
+                    分数: <span id="score">0</span>
+                </div>
+                <div class="combo-display neon-text neon-yellow" id="combo">
+                    COMBO <span id="combo-count">0</span>
+                </div>
+                <div class="game-controls">
+                    <button class="control-btn" id="btn-pause" title="暂停 (ESC)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="6" y="4" width="4" height="16"/>
+                            <rect x="14" y="4" width="4" height="16"/>
+                        </svg>
+                    </button>
+                    <button class="control-btn" id="btn-restart" title="重新开始">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="song-name neon-text neon-purple" id="current-song-name">
+                    🎹 卡农
+                </div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+
+            <div class="staff-lines" id="staff-lines"></div>
+            
+            <div class="hit-line"></div>
+
+            <div class="notes-area" id="notes-area"></div>
+
+            <div class="hold-hint" id="hold-hint" style="display: none;">
+                ⏱️ 长按时保持按键
+            </div>
+
+            <div class="tutorial-tip" id="tutorial-tip">
+                按下屏幕显示的 <span class="key-hint">字母键</span> 来演奏
+                <span style="margin-left: 15px; color: #666;">|</span>
+                <span style="margin-left: 15px;">ESC 暂停</span>
+            </div>
+
+            <div class="piano-keys-wrapper">
+                <div class="piano-keys" id="piano-keys"></div>
+            </div>
+        </div>
+
+        <!-- 结果界面 -->
+        <div id="result-screen">
+            <p class="result-title neon-text neon-cyan">演奏完成</p>
+            <div class="grade-display" id="grade">S</div>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">最终分数</div>
+                    <div class="stat-value" id="final-score">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">最高连击</div>
+                    <div class="stat-value" id="max-combo">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">正确率</div>
+                    <div class="stat-value" id="accuracy">0%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">完美次数</div>
+                    <div class="stat-value" id="perfect-count">0</div>
+                </div>
+            </div>
+
+            <div id="leaderboard">
+                <h3 class="leaderboard-title neon-text neon-pink">排行榜</h3>
+                <ul class="leaderboard-list" id="leaderboard-list"></ul>
+            </div>
+
+            <button class="menu-btn" id="btn-retry">再来一次</button>
+            <button class="menu-btn" id="btn-back">返回主菜单</button>
+        </div>
+
+        <!-- 暂停界面 -->
+        <div class="pause-overlay" id="pause-overlay">
+            <div class="pause-content">
+                <p class="pause-text neon-text neon-yellow">已暂停</p>
+                <div class="pause-buttons">
+                    <button class="pause-btn" id="btn-continue">继续游戏</button>
+                    <button class="pause-btn" id="btn-restart-pause">重新开始</button>
+                    <button class="pause-btn danger" id="btn-quit-pause">返回主菜单</button>
+                </div>
+                <p class="pause-hint">按 ESC 继续</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 版本信息 ====================
+        const VERSION = 'v2.1.0';
+        const BUILD_DATE = '2026.04.16.1756';
+
+        // ==================== 游戏配置 ====================
+        const CONFIG = {
+            keys: [
+                { letter: 'A', note: 'C4', color: '#ff6b6b' },
+                { letter: 'S', note: 'D4', color: '#feca57' },
+                { letter: 'D', note: 'E4', color: '#48dbfb' },
+                { letter: 'F', note: 'F4', color: '#ff9ff3' },
+                { letter: 'J', note: 'G4', color: '#54a0ff' },
+                { letter: 'K', note: 'A4', color: '#5f27cd' },
+                { letter: 'L', note: 'B4', color: '#00d2d3' }
+            ],
+            perfectWindow: 100,
+            goodWindow: 180,
+            missWindow: 250,
+            travelTime: 4000,
+            spawnAhead: 4000,
+            holdThreshold: 300
+        };
+
+        // ==================== 曲目数据 ====================
+        const SONGS = {
+            canon: {
+                name: '🎹 卡农',
+                duration: 45000,
+                notes: [
+                    { time: 0, key: 0, type: 'short' }, { time: 600, key: 4, type: 'short' },
+                    { time: 1200, key: 5, type: 'short' }, { time: 1800, key: 3, type: 'short' },
+                    { time: 2400, key: 2, type: 'short' }, { time: 3000, key: 4, type: 'short' },
+                    { time: 3600, key: 1, type: 'short' }, { time: 4200, key: 3, type: 'short' },
+                    { time: 4800, key: 0, type: 'long', duration: 600 },
+                    { time: 5400, key: 2, type: 'short' }, { time: 6000, key: 4, type: 'short' },
+                    { time: 6600, key: 2, type: 'short' }, { time: 7200, key: 0, type: 'long', duration: 600 },
+                    { time: 7800, key: 1, type: 'short' }, { time: 8400, key: 3, type: 'short' },
+                    { time: 9000, key: 1, type: 'short' }, { time: 9600, key: 0, type: 'long', duration: 600 },
+                    { time: 10200, key: 4, type: 'short' }, { time: 10800, key: 3, type: 'short' },
+                    { time: 11400, key: 2, type: 'short' }, { time: 12000, key: 1, type: 'long', duration: 600 },
+                    { time: 12600, key: 2, type: 'short' }, { time: 13200, key: 0, type: 'short' },
+                    { time: 13800, key: 3, type: 'short' }, { time: 14400, key: 4, type: 'long', duration: 600 },
+                    { time: 15000, key: 3, type: 'short' }, { time: 15600, key: 2, type: 'short' },
+                    { time: 16200, key: 1, type: 'short' }, { time: 16800, key: 0, type: 'long', duration: 600 },
+                    { time: 17400, key: 2, type: 'short' }, { time: 18000, key: 4, type: 'long', duration: 600 },
+                    { time: 18600, key: 3, type: 'short' }, { time: 19200, key: 5, type: 'long', duration: 600 },
+                    { time: 19800, key: 4, type: 'short' }, { time: 20400, key: 3, type: 'short' },
+                    { time: 21000, key: 2, type: 'short' }, { time: 21600, key: 1, type: 'long', duration: 600 },
+                    { time: 22200, key: 3, type: 'short' }, { time: 22800, key: 0, type: 'long', duration: 600 },
+                    { time: 23400, key: 4, type: 'short' }, { time: 24000, key: 0, type: 'short' },
+                    { time: 24300, key: 1, type: 'short' }, { time: 24600, key: 2, type: 'short' },
+                    { time: 24900, key: 3, type: 'short' }, { time: 25200, key: 4, type: 'long', duration: 600 },
+                    { time: 25500, key: 3, type: 'short' }, { time: 25800, key: 2, type: 'short' },
+                    { time: 26100, key: 1, type: 'short' }, { time: 26400, key: 0, type: 'long', duration: 600 },
+                    { time: 27000, key: 4, type: 'short' }, { time: 27600, key: 5, type: 'long', duration: 600 },
+                    { time: 28200, key: 4, type: 'short' }, { time: 28800, key: 3, type: 'long', duration: 600 },
+                    { time: 29400, key: 2, type: 'short' }, { time: 30000, key: 1, type: 'long', duration: 600 },
+                    { time: 30600, key: 0, type: 'short' }, { time: 31200, key: 2, type: 'long', duration: 300 },
+                    { time: 31500, key: 3, type: 'long', duration: 300 }, { time: 31800, key: 4, type: 'long', duration: 300 },
+                    { time: 32100, key: 5, type: 'long', duration: 600 }, { time: 32400, key: 4, type: 'short' },
+                    { time: 32700, key: 3, type: 'short' }, { time: 33000, key: 2, type: 'short' },
+                    { time: 33300, key: 1, type: 'short' }, { time: 33600, key: 0, type: 'long', duration: 600 },
+                    { time: 34200, key: 2, type: 'short' }, { time: 34800, key: 4, type: 'long', duration: 600 },
+                    { time: 35400, key: 3, type: 'short' }, { time: 36000, key: 1, type: 'long', duration: 600 },
+                    { time: 36600, key: 3, type: 'short' }, { time: 37200, key: 0, type: 'long', duration: 600 },
+                    { time: 37800, key: 4, type: 'long', duration: 600 }, { time: 38400, key: 5, type: 'long', duration: 600 },
+                    { time: 39000, key: 4, type: 'short' }, { time: 39600, key: 3, type: 'short' },
+                    { time: 40200, key: 2, type: 'short' }, { time: 40800, key: 1, type: 'long', duration: 600 },
+                    { time: 41400, key: 2, type: 'short' }, { time: 42000, key: 0, type: 'long', duration: 1200 }
+                ]
+            },
+            skycity: {
+                name: '🎵 天空之城',
+                duration: 50000,
+                notes: [
+                    { time: 0, key: 4, type: 'long', duration: 800 },
+                    { time: 800, key: 3, type: 'short' }, { time: 1200, key: 2, type: 'short' },
+                    { time: 1600, key: 0, type: 'long', duration: 800 },
+                    { time: 2400, key: 2, type: 'short' }, { time: 2800, key: 3, type: 'long', duration: 600 },
+                    { time: 3400, key: 4, type: 'long', duration: 600 }, { time: 4000, key: 5, type: 'long', duration: 800 },
+                    { time: 4800, key: 4, type: 'short' }, { time: 5200, key: 3, type: 'short' },
+                    { time: 5600, key: 2, type: 'long', duration: 800 },
+                    { time: 6400, key: 3, type: 'short' }, { time: 6800, key: 4, type: 'long', duration: 600 },
+                    { time: 7400, key: 0, type: 'long', duration: 800 },
+                    { time: 8200, key: 2, type: 'short' }, { time: 8600, key: 3, type: 'short' },
+                    { time: 9000, key: 4, type: 'long', duration: 600 }, { time: 9600, key: 3, type: 'short' },
+                    { time: 10000, key: 2, type: 'long', duration: 800 },
+                    { time: 10800, key: 0, type: 'long', duration: 600 }, { time: 11400, key: 2, type: 'short' },
+                    { time: 11800, key: 3, type: 'long', duration: 800 },
+                    { time: 12600, key: 4, type: 'long', duration: 600 }, { time: 13200, key: 5, type: 'long', duration: 600 },
+                    { time: 13800, key: 4, type: 'long', duration: 800 },
+                    { time: 14600, key: 3, type: 'short' }, { time: 15000, key: 2, type: 'long', duration: 800 },
+                    { time: 15800, key: 0, type: 'long', duration: 600 }, { time: 16400, key: 2, type: 'short' },
+                    { time: 16800, key: 3, type: 'long', duration: 800 },
+                    { time: 17600, key: 2, type: 'short' }, { time: 18000, key: 0, type: 'long', duration: 800 },
+                    { time: 18800, key: 2, type: 'short' }, { time: 19200, key: 3, type: 'long', duration: 600 },
+                    { time: 19800, key: 4, type: 'long', duration: 1000 },
+                    { time: 20800, key: 5, type: 'long', duration: 800 }, { time: 21600, key: 4, type: 'short' },
+                    { time: 22000, key: 3, type: 'long', duration: 800 },
+                    { time: 22800, key: 2, type: 'short' }, { time: 23200, key: 0, type: 'long', duration: 1200 },
+                    { time: 24400, key: 3, type: 'short' }, { time: 24800, key: 4, type: 'long', duration: 600 },
+                    { time: 25400, key: 5, type: 'long', duration: 800 },
+                    { time: 26200, key: 4, type: 'long', duration: 600 }, { time: 26800, key: 3, type: 'short' },
+                    { time: 27200, key: 2, type: 'long', duration: 800 },
+                    { time: 28000, key: 0, type: 'long', duration: 1000 },
+                    { time: 29000, key: 4, type: 'long', duration: 800 }, { time: 29800, key: 3, type: 'short' },
+                    { time: 30200, key: 2, type: 'long', duration: 800 },
+                    { time: 31000, key: 0, type: 'long', duration: 1200 },
+                    { time: 32200, key: 2, type: 'short' }, { time: 32600, key: 3, type: 'long', duration: 600 },
+                    { time: 33200, key: 4, type: 'long', duration: 800 },
+                    { time: 34000, key: 3, type: 'short' }, { time: 34400, key: 2, type: 'long', duration: 600 },
+                    { time: 35000, key: 0, type: 'long', duration: 1500 }
+                ]
+            },
+            river: {
+                name: '🌊 River Flows In You',
+                duration: 55000,
+                notes: [
+                    { time: 0, key: 2, type: 'long', duration: 800 },
+                    { time: 800, key: 4, type: 'long', duration: 800 },
+                    { time: 1600, key: 5, type: 'long', duration: 800 },
+                    { time: 2400, key: 4, type: 'long', duration: 600 }, { time: 3000, key: 2, type: 'short' },
+                    { time: 3400, key: 0, type: 'long', duration: 800 },
+                    { time: 4200, key: 2, type: 'long', duration: 800 },
+                    { time: 5000, key: 0, type: 'long', duration: 600 }, { time: 5600, key: 2, type: 'short' },
+                    { time: 6000, key: 4, type: 'long', duration: 800 },
+                    { time: 6800, key: 5, type: 'long', duration: 800 }, { time: 7600, key: 4, type: 'short' },
+                    { time: 8000, key: 2, type: 'long', duration: 800 },
+                    { time: 8800, key: 0, type: 'long', duration: 800 },
+                    { time: 9600, key: 2, type: 'long', duration: 600 }, { time: 10200, key: 4, type: 'short' },
+                    { time: 10600, key: 5, type: 'long', duration: 600 },
+                    { time: 11200, key: 4, type: 'long', duration: 600 }, { time: 11800, key: 2, type: 'short' },
+                    { time: 12200, key: 0, type: 'long', duration: 800 },
+                    { time: 13000, key: 2, type: 'long', duration: 800 },
+                    { time: 13800, key: 4, type: 'long', duration: 600 }, { time: 14400, key: 5, type: 'short' },
+                    { time: 14800, key: 4, type: 'long', duration: 800 },
+                    { time: 15600, key: 2, type: 'long', duration: 600 }, { time: 16200, key: 0, type: 'short' },
+                    { time: 16600, key: 2, type: 'long', duration: 600 },
+                    { time: 17200, key: 0, type: 'long', duration: 600 }, { time: 17800, key: 2, type: 'short' },
+                    { time: 18200, key: 4, type: 'long', duration: 800 },
+                    { time: 19000, key: 5, type: 'long', duration: 800 },
+                    { time: 19800, key: 4, type: 'long', duration: 600 }, { time: 20400, key: 2, type: 'short' },
+                    { time: 20800, key: 0, type: 'long', duration: 1000 },
+                    { time: 21800, key: 2, type: 'long', duration: 800 },
+                    { time: 22600, key: 4, type: 'long', duration: 800 },
+                    { time: 23400, key: 5, type: 'long', duration: 800 },
+                    { time: 24200, key: 4, type: 'long', duration: 600 }, { time: 24800, key: 2, type: 'short' },
+                    { time: 25200, key: 0, type: 'long', duration: 800 },
+                    { time: 26000, key: 2, type: 'long', duration: 600 }, { time: 26600, key: 4, type: 'short' },
+                    { time: 27000, key: 5, type: 'long', duration: 600 },
+                    { time: 27600, key: 4, type: 'long', duration: 600 }, { time: 28200, key: 2, type: 'short' },
+                    { time: 28600, key: 0, type: 'long', duration: 1000 },
+                    { time: 29600, key: 2, type: 'long', duration: 800 },
+                    { time: 30400, key: 4, type: 'long', duration: 800 },
+                    { time: 31200, key: 5, type: 'long', duration: 800 },
+                    { time: 32000, key: 4, type: 'long', duration: 600 }, { time: 32600, key: 2, type: 'short' },
+                    { time: 33000, key: 0, type: 'long', duration: 800 },
+                    { time: 33800, key: 2, type: 'long', duration: 600 }, { time: 34400, key: 0, type: 'short' },
+                    { time: 34800, key: 2, type: 'long', duration: 600 },
+                    { time: 35400, key: 4, type: 'long', duration: 800 },
+                    { time: 36200, key: 5, type: 'long', duration: 1000 },
+                    { time: 37200, key: 4, type: 'long', duration: 600 }, { time: 37800, key: 2, type: 'short' },
+                    { time: 38200, key: 0, type: 'long', duration: 800 },
+                    { time: 39000, key: 2, type: 'long', duration: 800 },
+                    { time: 39800, key: 4, type: 'long', duration: 800 },
+                    { time: 40600, key: 5, type: 'long', duration: 800 },
+                    { time: 41400, key: 4, type: 'long', duration: 600 }, { time: 42000, key: 2, type: 'short' },
+                    { time: 42400, key: 0, type: 'long', duration: 1500 },
+                    { time: 43900, key: 2, type: 'long', duration: 1000 }
+                ]
+            }
+        };
+
+        // ==================== 音频系统 ====================
+        class AudioSystem {
+            constructor() {
+                this.audioContext = null;
+                this.initialized = false;
+            }
+
+            init() {
+                if (this.initialized) return;
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.audioContext = new AudioContext();
+                    this.initialized = true;
+                } catch (e) {
+                    console.warn('Web Audio API not supported');
+                }
+            }
+
+            playNote(keyIndex, duration = 500) {
+                if (!this.initialized || !this.audioContext) return;
+
+                const freqMap = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88];
+                const freq = freqMap[keyIndex];
+                const time = this.audioContext.currentTime;
+                const noteDuration = duration / 1000;
+
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, time);
+                
+                gain.gain.setValueAtTime(0, time);
+                gain.gain.linearRampToValueAtTime(0.5, time + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.3, time + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + noteDuration);
+
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+
+                osc.start(time);
+                osc.stop(time + noteDuration);
+
+                this.addHarmonics(freq, time, noteDuration);
+            }
+
+            addHarmonics(freq, startTime, duration) {
+                const harmonics = [2, 3, 4, 5];
+                const volumes = [0.2, 0.1, 0.05, 0.02];
+
+                harmonics.forEach((h, i) => {
+                    const osc = this.audioContext.createOscillator();
+                    const gain = this.audioContext.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq * h, startTime);
+                    
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(volumes[i], startTime + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+                    osc.connect(gain);
+                    gain.connect(this.audioContext.destination);
+
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                });
+            }
+
+            playHitSound(type) {
+                if (!this.initialized || !this.audioContext) return;
+                
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                const time = this.audioContext.currentTime;
+                
+                if (type === 'perfect') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, time);
+                    gain.gain.setValueAtTime(0.3, time);
+                    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+                } else if (type === 'good') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(660, time);
+                    gain.gain.setValueAtTime(0.2, time);
+                    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.08);
+                } else if (type === 'hold') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1000, time);
+                    gain.gain.setValueAtTime(0.25, time);
+                    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+                } else {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, time);
+                    gain.gain.setValueAtTime(0.15, time);
+                    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+                }
+
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+
+                osc.start(time);
+                osc.stop(time + 0.15);
+            }
+        }
+
+        // ==================== 游戏状态 ====================
+        const gameState = {
+            currentSong: 'canon',
+            mode: 'practice',
+            score: 0,
+            combo: 0,
+            maxCombo: 0,
+            perfectCount: 0,
+            goodCount: 0,
+            missCount: 0,
+            holdSuccess: 0,
+            isPlaying: false,
+            isPaused: false,
+            startTime: 0,
+            notes: [],
+            activeNotes: [],
+            songData: [],
+            speedMultiplier: 1,
+            keyPositions: [],
+            holdingKeys: new Set(),
+            holdStartTimes: {}
+        };
+
+        // ==================== DOM 元素 ====================
+        const elements = {
+            startScreen: document.getElementById('start-screen'),
+            gameScreen: document.getElementById('game-screen'),
+            resultScreen: document.getElementById('result-screen'),
+            notesArea: document.getElementById('notes-area'),
+            pianoKeys: document.getElementById('piano-keys'),
+            scoreDisplay: document.getElementById('score'),
+            comboDisplay: document.getElementById('combo'),
+            comboCount: document.getElementById('combo-count'),
+            progressFill: document.getElementById('progress-fill'),
+            pauseOverlay: document.getElementById('pause-overlay'),
+            tutorialTip: document.getElementById('tutorial-tip'),
+            staffLines: document.getElementById('staff-lines'),
+            songName: document.getElementById('current-song-name'),
+            holdHint: document.getElementById('hold-hint'),
+            versionBadge: document.getElementById('version-badge')
+        };
+
+        const audio = new AudioSystem();
+
+        // ==================== 初始化 ====================
+        function init() {
+            elements.versionBadge.textContent = VERSION;
+            
+            createPianoKeys();
+            createStaffLines();
+            createNoteTrails();
+            setupEventListeners();
+            loadLeaderboard();
+            
+            window.addEventListener('resize', updateKeyPositions);
+        }
+
+        function createNoteTrails() {
+            const trailsContainer = document.createElement('div');
+            trailsContainer.className = 'note-trails';
+            trailsContainer.id = 'note-trails';
+            
+            CONFIG.keys.forEach((key, i) => {
+                const keyWidth = 80;
+                const keyGap = 6;
+                const totalKeyWidth = keyWidth + keyGap;
+                const x = (i * totalKeyWidth) + (keyWidth / 2);
+                
+                const trail = document.createElement('div');
+                trail.className = 'trail-line';
+                trail.style.left = `${x}px`;
+                trail.style.background = `linear-gradient(180deg, transparent 0%, ${key.color} 100%)`;
+                trailsContainer.appendChild(trail);
+            });
+            
+            elements.notesArea.parentNode.insertBefore(trailsContainer, elements.notesArea);
+        }
+
+        function createPianoKeys() {
+            elements.pianoKeys.innerHTML = CONFIG.keys.map((key, i) => `
+                <div class="piano-key" data-index="${i}" data-key="${key.letter}" style="border-color: ${key.color}; box-shadow: 0 0 10px ${key.color}40;">
+                    <span class="key-letter">${key.letter}</span>
+                    <span class="key-note">${key.note}</span>
+                </div>
+            `).join('');
+            
+            setTimeout(updateKeyPositions, 100);
+        }
+
+        function updateKeyPositions() {
+            gameState.keyPositions = [];
+            const keys = document.querySelectorAll('.piano-key');
+            const wrapper = document.querySelector('.piano-keys-wrapper');
+            
+            if (!wrapper) return;
+            
+            const wrapperRect = wrapper.getBoundingClientRect();
+            const wrapperLeft = wrapperRect.left;
+            
+            keys.forEach((key, i) => {
+                const rect = key.getBoundingClientRect();
+                gameState.keyPositions[i] = {
+                    left: rect.left + rect.width / 2 - wrapperLeft,
+                    center: rect.left + rect.width / 2
+                };
+            });
+        }
+
+        function createStaffLines() {
+            elements.staffLines.innerHTML = Array(5).fill(0).map((_, i) => 
+                `<div class="staff-line" style="top: ${30 + i * 25}px;"></div>`
+            ).join('');
+        }
+
+        function setupEventListeners() {
+            // 曲目选择
+            document.querySelectorAll('.song-btn').forEach(btn => {
+                btn.onclick = () => {
+                    document.querySelectorAll('.song-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    gameState.currentSong = btn.dataset.song;
+                };
+            });
+
+            document.getElementById('btn-practice').onclick = () => startGame('practice');
+            document.getElementById('btn-play').onclick = () => startGame('play');
+            document.getElementById('btn-challenge').onclick = () => startGame('challenge');
+            document.getElementById('btn-leaderboard').onclick = showLeaderboard;
+            document.getElementById('btn-retry').onclick = () => startGame(gameState.mode);
+            document.getElementById('btn-back').onclick = showStartScreen;
+            
+            // 暂停相关按钮
+            document.getElementById('btn-pause').onclick = () => {
+                if (gameState.isPlaying) togglePause();
+            };
+            document.getElementById('btn-restart').onclick = () => {
+                if (gameState.isPlaying) restartGame();
+            };
+            document.getElementById('btn-continue').onclick = () => togglePause();
+            document.getElementById('btn-restart-pause').onclick = () => {
+                togglePause();
+                restartGame();
+            };
+            document.getElementById('btn-quit-pause').onclick = () => {
+                togglePause();
+                quitToMenu();
+            };
+
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && gameState.isPlaying) {
+                    togglePause();
+                }
+            });
+        }
+
+        // ==================== 游戏流程 ====================
+        function startGame(mode) {
+            audio.init();
+            
+            gameState.mode = mode;
+            gameState.score = 0;
+            gameState.combo = 0;
+            gameState.maxCombo = 0;
+            gameState.perfectCount = 0;
+            gameState.goodCount = 0;
+            gameState.missCount = 0;
+            gameState.holdSuccess = 0;
+            gameState.isPlaying = true;
+            gameState.isPaused = false;
+            gameState.notes = [];
+            gameState.activeNotes = [];
+            gameState.holdingKeys.clear();
+            gameState.holdStartTimes = {};
+
+            const speedMap = { practice: 0.8, play: 1, challenge: 1.2 };
+            gameState.speedMultiplier = speedMap[mode];
+
+            const song = SONGS[gameState.currentSong];
+            elements.songName.textContent = song.name;
+            
+            gameState.songData = song.notes.map(note => ({
+                ...note,
+                time: note.time / gameState.speedMultiplier,
+                endTime: (note.time + (note.duration || 300)) / gameState.speedMultiplier,
+                spawned: false
+            }));
+
+            const hasLongNotes = song.notes.some(n => n.type === 'long');
+            elements.holdHint.style.display = hasLongNotes ? 'block' : 'none';
+
+            elements.startScreen.style.display = 'none';
+            elements.resultScreen.style.display = 'none';
+            elements.gameScreen.style.display = 'block';
+            elements.notesArea.innerHTML = '';
+            
+            updateScore();
+            updateCombo();
+
+            setTimeout(() => {
+                elements.tutorialTip.style.display = 'none';
+            }, 5000);
+
+            updateKeyPositions();
+            
+            gameState.startTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameLoop(timestamp) {
+            if (!gameState.isPlaying) return;
+            if (gameState.isPaused) {
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            const elapsed = timestamp - gameState.startTime;
+
+            const song = SONGS[gameState.currentSong];
+            const totalDuration = song.duration / gameState.speedMultiplier;
+            elements.progressFill.style.width = `${Math.min(100, (elapsed / totalDuration) * 100)}%`;
+
+            spawnNotes(elapsed);
+            updateNotes(elapsed);
+            checkHoldNotes(elapsed);
+
+            if (elapsed > totalDuration + 2000) {
+                endGame();
+                return;
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function spawnNotes(elapsed) {
+            gameState.songData.forEach((note, index) => {
+                if (note.spawned) return;
+                
+                const spawnTime = note.time - CONFIG.spawnAhead;
+                if (elapsed >= spawnTime) {
+                    note.spawned = true;
+                    createNoteElement(note, index);
+                }
+            });
+        }
+
+        function createNoteElement(note, index) {
+            const key = CONFIG.keys[note.key];
+            const noteEl = document.createElement('div');
+            noteEl.className = `note ${note.type}`;
+            noteEl.dataset.index = index;
+            noteEl.dataset.key = note.key;
+            noteEl.dataset.time = note.time;
+            noteEl.dataset.type = note.type;
+            if (note.duration) {
+                noteEl.dataset.duration = note.duration;
+                noteEl.dataset.endTime = note.endTime;
+            }
+            
+            const keyWidth = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--piano-key-width'));
+            const keyGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--piano-key-gap'));
+            const totalKeyWidth = keyWidth + keyGap;
+            const startX = (note.key * totalKeyWidth) + (keyWidth / 2);
+            
+            noteEl.style.left = `${startX}px`;
+            noteEl.style.top = '0px';
+            noteEl.style.opacity = '0';
+            noteEl.style.transform = 'translateX(-50%) scale(0.5)';
+            
+            const letterSpan = document.createElement('span');
+            letterSpan.className = 'note-letter';
+            letterSpan.textContent = key.letter;
+            letterSpan.style.color = key.color;
+            noteEl.appendChild(letterSpan);
+
+            if (note.type === 'long' && note.duration) {
+                const durationSpan = document.createElement('span');
+                durationSpan.className = 'note-duration';
+                durationSpan.textContent = `${(note.duration / 1000).toFixed(1)}s`;
+                noteEl.appendChild(durationSpan);
+                
+                const minHeight = 60;
+                const extraHeight = Math.min(note.duration / 20, 80);
+                noteEl.style.minHeight = `${minHeight + extraHeight}px`;
+            }
+
+            elements.notesArea.appendChild(noteEl);
+            gameState.activeNotes.push(noteEl);
+            
+            requestAnimationFrame(() => {
+                noteEl.style.transition = 'opacity 0.3s, transform 0.3s';
+                noteEl.style.opacity = '1';
+                noteEl.style.transform = 'translateX(-50%) scale(1)';
+            });
+        }
+
+        function updateNotes(elapsed) {
+            const notesAreaRect = elements.notesArea.getBoundingClientRect();
+            const pianoWrapper = document.querySelector('.piano-keys-wrapper');
+            
+            if (!pianoWrapper) return;
+            
+            const pianoRect = pianoWrapper.getBoundingClientRect();
+            const hitLineY = pianoRect.top - notesAreaRect.top - 30;
+            
+            gameState.activeNotes = gameState.activeNotes.filter(noteEl => {
+                const noteTime = parseFloat(noteEl.dataset.time);
+                const noteType = noteEl.dataset.type;
+                const noteDuration = parseFloat(noteEl.dataset.duration) || 300;
+                const noteEndTime = noteTime + noteDuration;
+                
+                const progress = 1 - ((noteTime - elapsed) / CONFIG.travelTime);
+                
+                if (progress < 0) return true;
+                
+                if (noteType === 'long') {
+                    if (elapsed > noteEndTime + 200) {
+                        if (!noteEl.classList.contains('hit')) {
+                            noteEl.classList.add('missed');
+                            handleMiss(noteEl);
+                            setTimeout(() => noteEl.remove(), 300);
+                        }
+                        return false;
+                    }
+                    
+                    const y = progress * hitLineY;
+                    noteEl.style.top = `${y}px`;
+                    
+                    const holdProgress = (elapsed - noteTime) / noteDuration;
+                    if (holdProgress >= 0.8 && !noteEl.classList.contains('hit')) {
+                        noteEl.classList.add('holding');
+                    }
+                } else {
+                    if (progress > 1) {
+                        if (!noteEl.classList.contains('hit')) {
+                            noteEl.classList.add('missed');
+                            handleMiss(noteEl);
+                            setTimeout(() => noteEl.remove(), 300);
+                        }
+                        return false;
+                    }
+                    
+                    const y = progress * hitLineY;
+                    noteEl.style.top = `${y}px`;
+                }
+
+                return true;
+            });
+        }
+
+        function checkHoldNotes(elapsed) {
+            gameState.activeNotes.forEach(noteEl => {
+                if (noteEl.classList.contains('hit')) return;
+                
+                const noteKey = parseInt(noteEl.dataset.key);
+                const noteTime = parseFloat(noteEl.dataset.time);
+                const noteDuration = parseFloat(noteEl.dataset.duration) || 300;
+                const noteEndTime = noteTime + noteDuration;
+                
+                if (gameState.holdingKeys.has(noteKey)) {
+                    const holdStartTime = gameState.holdStartTimes[noteKey];
+                    const holdDuration = elapsed - holdStartTime;
+                    
+                    if (holdDuration >= CONFIG.holdThreshold) {
+                        if (elapsed >= noteTime - 100 && elapsed <= noteEndTime + 200) {
+                            noteEl.classList.add('hit');
+                            noteEl.classList.remove('holding');
+                            
+                            gameState.combo++;
+                            gameState.holdSuccess++;
+                            gameState.perfectCount++;
+                            gameState.score += 150 * (1 + gameState.combo * 0.15);
+                            
+                            if (gameState.combo > gameState.maxCombo) {
+                                gameState.maxCombo = gameState.combo;
+                            }
+
+                            audio.playHitSound('hold');
+                            showHitEffect(noteEl, 'HOLD!', '#ff9500');
+                            updateScore();
+                            updateCombo();
+                            screenShake('light');
+
+                            if (gameState.combo > 0 && gameState.combo % 10 === 0) {
+                                showComboFire();
+                                screenShake('heavy');
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function handleKeyDown(e) {
+            if (!gameState.isPlaying || gameState.isPaused) return;
+
+            const keyIndex = CONFIG.keys.findIndex(k => k.letter.toLowerCase() === e.key.toLowerCase());
+            if (keyIndex === -1) return;
+
+            e.preventDefault();
+
+            const keyEl = document.querySelector(`.piano-key[data-index="${keyIndex}"]`);
+            if (keyEl) {
+                keyEl.classList.add('hit');
+                keyEl.classList.add('pressed');
+            }
+
+            if (!gameState.holdingKeys.has(keyIndex)) {
+                gameState.holdingKeys.add(keyIndex);
+                gameState.holdStartTimes[keyIndex] = performance.now() - gameState.startTime;
+                
+                audio.playNote(keyIndex, 300);
+                checkHit(keyIndex);
+            }
+        }
+
+        function handleKeyUp(e) {
+            const keyIndex = CONFIG.keys.findIndex(k => k.letter.toLowerCase() === e.key.toLowerCase());
+            if (keyIndex === -1) return;
+
+            const keyEl = document.querySelector(`.piano-key[data-index="${keyIndex}"]`);
+            if (keyEl) {
+                keyEl.classList.remove('hit');
+                keyEl.classList.remove('pressed');
+                keyEl.classList.remove('holding');
+            }
+
+            gameState.holdingKeys.delete(keyIndex);
+            delete gameState.holdStartTimes[keyIndex];
+        }
+
+        function checkHit(keyIndex) {
+            const elapsed = performance.now() - gameState.startTime;
+
+            let closestNote = null;
+            let closestDistance = Infinity;
+
+            gameState.activeNotes.forEach(noteEl => {
+                if (parseInt(noteEl.dataset.key) !== keyIndex) return;
+                if (noteEl.classList.contains('hit')) return;
+                if (noteEl.dataset.type === 'long') return;
+
+                const noteTime = parseFloat(noteEl.dataset.time);
+                const timeDiff = Math.abs(elapsed - noteTime);
+
+                if (timeDiff < closestDistance && timeDiff < CONFIG.missWindow * 2) {
+                    closestDistance = timeDiff;
+                    closestNote = noteEl;
+                }
+            });
+
+            if (closestNote) {
+                if (closestDistance <= CONFIG.perfectWindow) {
+                    handlePerfect(closestNote);
+                } else if (closestDistance <= CONFIG.goodWindow) {
+                    handleGood(closestNote);
+                } else if (closestDistance <= CONFIG.missWindow * 1.5) {
+                    handleOk(closestNote);
+                }
+            }
+        }
+
+        function handlePerfect(noteEl) {
+            noteEl.classList.add('hit');
+            gameState.combo++;
+            gameState.perfectCount++;
+            gameState.score += 100 * (1 + gameState.combo * 0.1);
+            
+            if (gameState.combo > gameState.maxCombo) {
+                gameState.maxCombo = gameState.combo;
+            }
+
+            audio.playHitSound('perfect');
+            showHitEffect(noteEl, 'PERFECT', '#00ff9f');
+            updateScore();
+            updateCombo();
+            screenShake('light');
+
+            if (gameState.combo > 0 && gameState.combo % 10 === 0) {
+                showComboFire();
+                screenShake('heavy');
+            }
+
+            setTimeout(() => noteEl.remove(), 200);
+        }
+
+        function handleGood(noteEl) {
+            noteEl.classList.add('hit');
+            gameState.combo++;
+            gameState.goodCount++;
+            gameState.score += 50 * (1 + gameState.combo * 0.05);
+            
+            if (gameState.combo > gameState.maxCombo) {
+                gameState.maxCombo = gameState.combo;
+            }
+
+            audio.playHitSound('good');
+            showHitEffect(noteEl, 'GOOD', '#00f5ff');
+            updateScore();
+            updateCombo();
+            screenShake('light');
+
+            setTimeout(() => noteEl.remove(), 200);
+        }
+
+        function handleOk(noteEl) {
+            noteEl.classList.add('hit');
+            gameState.combo = 0;
+            gameState.score += 20;
+            
+            audio.playHitSound('ok');
+            showHitEffect(noteEl, 'OK', '#ffff00');
+            updateScore();
+            updateCombo();
+
+            setTimeout(() => noteEl.remove(), 200);
+        }
+
+        function screenShake(intensity) {
+            const container = document.getElementById('game-container');
+            const amount = intensity === 'heavy' ? 8 : 3;
+            const duration = intensity === 'heavy' ? 200 : 100;
+            
+            const originalTransform = container.style.transform;
+            const randomX = (Math.random() - 0.5) * amount;
+            const randomY = (Math.random() - 0.5) * amount;
+            
+            container.style.transform = `translate(${randomX}px, ${randomY}px)`;
+            
+            setTimeout(() => {
+                container.style.transform = originalTransform;
+            }, duration);
+        }
+
+        function handleMiss(noteEl) {
+            gameState.combo = 0;
+            gameState.missCount++;
+            updateCombo();
+        }
+
+        function showHitEffect(noteEl, text, color) {
+            const effect = document.createElement('div');
+            effect.className = 'hit-effect';
+            effect.style.left = noteEl.style.left;
+            effect.style.top = noteEl.style.top;
+            effect.style.borderColor = color;
+            elements.notesArea.appendChild(effect);
+
+            const textEl = document.createElement('div');
+            textEl.className = 'fire-text';
+            textEl.textContent = text;
+            textEl.style.left = noteEl.style.left;
+            textEl.style.top = noteEl.style.top;
+            textEl.style.color = color;
+            textEl.style.textShadow = `0 0 15px ${color}`;
+            elements.notesArea.appendChild(textEl);
+
+            setTimeout(() => {
+                effect.remove();
+                textEl.remove();
+            }, 500);
+        }
+
+        function showComboFire() {
+            const fire = document.createElement('div');
+            fire.className = 'fire-text';
+            fire.textContent = `${gameState.combo} COMBO!`;
+            fire.style.left = '50%';
+            fire.style.top = '30%';
+            fire.style.color = '#ff6b6b';
+            fire.style.fontSize = '1.5rem';
+            elements.notesArea.appendChild(fire);
+            setTimeout(() => fire.remove(), 1000);
+        }
+
+        function updateScore() {
+            elements.scoreDisplay.textContent = Math.floor(gameState.score);
+        }
+
+        function updateCombo() {
+            elements.comboCount.textContent = gameState.combo;
+            
+            if (gameState.combo > 0) {
+                elements.comboDisplay.classList.add('active');
+            } else {
+                elements.comboDisplay.classList.remove('active');
+            }
+        }
+
+        function togglePause() {
+            gameState.isPaused = !gameState.isPaused;
+            elements.pauseOverlay.style.display = gameState.isPaused ? 'flex' : 'none';
+            
+            if (!gameState.isPaused) {
+                gameState.startTime = performance.now() - (gameState.songData[0]?.time || 0);
+            }
+        }
+
+        function restartGame() {
+            // 保存当前选择的曲目和模式
+            const currentSong = gameState.currentSong;
+            const currentMode = gameState.mode;
+            
+            // 重置游戏状态
+            gameState.notes = [];
+            gameState.activeNotes = [];
+            gameState.holdingKeys.clear();
+            gameState.holdStartTimes = {};
+            
+            // 清空音符区域
+            elements.notesArea.innerHTML = '';
+            
+            // 重新开始游戏
+            startGame(currentMode);
+        }
+
+        function quitToMenu() {
+            gameState.isPlaying = false;
+            gameState.isPaused = false;
+            
+            // 清空状态
+            gameState.notes = [];
+            gameState.activeNotes = [];
+            gameState.holdingKeys.clear();
+            gameState.holdStartTimes = {};
+            
+            // 清空音符区域
+            elements.notesArea.innerHTML = '';
+            
+            // 返回主菜单
+            showStartScreen();
+        }
+
+        function endGame() {
+            gameState.isPlaying = false;
+
+            const totalNotes = gameState.songData.length;
+            const correctNotes = gameState.perfectCount + gameState.goodCount;
+            const accuracy = Math.round((correctNotes / totalNotes) * 100);
+
+            let grade, gradeClass;
+            if (accuracy >= 95 && gameState.missCount <= 2) {
+                grade = 'S'; gradeClass = 'grade-s';
+            } else if (accuracy >= 85) {
+                grade = 'A'; gradeClass = 'grade-a';
+            } else if (accuracy >= 70) {
+                grade = 'B'; gradeClass = 'grade-b';
+            } else if (accuracy >= 50) {
+                grade = 'C'; gradeClass = 'grade-c';
+            } else {
+                grade = 'D'; gradeClass = 'grade-d';
+            }
+
+            saveScore(Math.floor(gameState.score), grade);
+
+            document.querySelector('.result-title').textContent = 
+                grade === 'S' ? '完美演出!' : grade === 'A' ? '出色演奏!' : '演奏完成';
+
+            const gradeEl = document.getElementById('grade');
+            gradeEl.textContent = grade;
+            gradeEl.className = `grade-display ${gradeClass}`;
+
+            document.getElementById('final-score').textContent = Math.floor(gameState.score);
+            document.getElementById('max-combo').textContent = gameState.maxCombo;
+            document.getElementById('accuracy').textContent = `${accuracy}%`;
+            document.getElementById('perfect-count').textContent = gameState.perfectCount;
+
+            loadLeaderboard();
+
+            elements.gameScreen.style.display = 'none';
+            elements.resultScreen.style.display = 'flex';
+        }
+
+        // ==================== 排行榜 ====================
+        function saveScore(score, grade) {
+            let leaderboard = JSON.parse(localStorage.getItem('neonKeysLeaderboard') || '[]');
+            
+            leaderboard.push({
+                score,
+                grade,
+                date: new Date().toLocaleDateString(),
+                mode: gameState.mode,
+                song: SONGS[gameState.currentSong].name
+            });
+
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10);
+
+            localStorage.setItem('neonKeysLeaderboard', JSON.stringify(leaderboard));
+        }
+
+        function loadLeaderboard() {
+            const leaderboard = JSON.parse(localStorage.getItem('neonKeysLeaderboard') || '[]');
+            const list = document.getElementById('leaderboard-list');
+
+            if (leaderboard.length === 0) {
+                list.innerHTML = '<li class="leaderboard-item" style="justify-content: center; color: #888;">暂无记录</li>';
+                return;
+            }
+
+            list.innerHTML = leaderboard.map((entry, i) => `
+                <li class="leaderboard-item ${i < 3 ? 'top-' + (i + 1) : ''}">
+                    <span>#${i + 1} ${entry.grade} ${entry.song || ''}</span>
+                    <span>${entry.score.toLocaleString()}</span>
+                </li>
+            `).join('');
+        }
+
+        function showLeaderboard() {
+            elements.startScreen.style.display = 'none';
+            elements.gameScreen.style.display = 'none';
+            elements.resultScreen.style.display = 'flex';
+            
+            document.querySelector('.result-title').textContent = '排行榜';
+            document.querySelector('.stats-grid').style.display = 'none';
+            document.getElementById('btn-retry').style.display = 'none';
+            document.getElementById('btn-back').style.display = 'inline-block';
+            
+            loadLeaderboard();
+        }
+
+        function showStartScreen() {
+            elements.startScreen.style.display = 'flex';
+            elements.gameScreen.style.display = 'none';
+            elements.resultScreen.style.display = 'none';
+            
+            document.querySelector('.stats-grid').style.display = 'grid';
+            document.getElementById('btn-retry').style.display = 'inline-block';
+            document.querySelector('.result-title').textContent = '演奏完成';
+            elements.tutorialTip.style.display = 'block';
+        }
+
+        init();
+    </script>
+</body>
+</html>
